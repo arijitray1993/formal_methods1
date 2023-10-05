@@ -41,7 +41,34 @@ example {n : ℤ} (hn : Even n) : Odd (n ^ 2 + 2 * n - 5) := by
 
 --4d
 example (a b c : ℤ) : Even (a - b) ∨ Even (a + c) ∨ Even (b - c) := by
-  sorry
+  obtain hbc | hbc := Int.even_or_odd (b - c)
+  . right
+    right
+    obtain ⟨x, hbc⟩ := hbc
+    use x
+    calc
+      b - c = 2 * x := by rw[hbc]
+      _ = x + x := by ring 
+  . obtain hac | hac := Int.even_or_odd (a + c)
+    . right
+      left
+      obtain ⟨x, hac⟩ := hac
+      use x
+      calc
+        a + c = 2 * x := by rw[hac]
+        _ = x + x := by ring
+    . left
+      obtain ⟨x, hac⟩ := hac
+      obtain ⟨y, hbc⟩ := hbc
+      use (x - y - c)
+      calc
+        a - b = (a+c) - (b-c) - 2 * c := by ring
+        _ = (2 * x + 1) - (b - c) - 2 * c := by rw[hac]
+        _ = (2 * x + 1) - (2 * y + 1) - 2 * c := by rw[hbc]
+        _ = 2 * x - 2 * y - 2 * c := by ring
+        _ = 2 * (x - y - c) := by ring
+        _ = (x-y-c) + (x-y-c) := by ring
+        _ = 2*(x-y-c)
 
 --5a
 example {a b : ℝ} (h : ∀ x, x ≥ a ∨ x ≤ b) : a ≤ b := by
@@ -132,42 +159,25 @@ example {x : ℝ} : x ^ 2 + x - 6 = 0 ↔ x = -3 ∨ x = 2 := by
         _ = 0 := by ring
 
 -- 6 b
-example {a : ℤ} : a ^ 2 - 5 * a + 5 ≤ -1 ↔ a = 2 ∨ a = 3 := by
+example {a : ℤ} : a^2 - 5*a + 5 ≤ -1 ↔ a = 2 ∨ a = 3 := by
   constructor
   . intro h
-    have h1 : -1 ≤ (2*a - 5) ∧ (2*a - 5) ≤ 1
-    · apply abs_le_of_sq_le_sq'
-      calc
-        (2 * a - 5) ^ 2 = 4 * a^2 - 2 * 2 * 5 * a + 25 :=by ring
-        _ = 4 * (a^2 - 5*a + 5) + 5 := by ring
-        _ ≤ 4 * (-1) + 5 := by rel[h]
-        _ ≤  1 ^ 2 := by numbers
-        _ = 1 := by numbers
-      numbers
-    have h_1l : -1 ≤ (2 * a - 5) := And.left h1
-    have h_1r : (2 * a - 5) ≤ 1 := And.right h1
-    have h_2a: 2 * 2 ≤ 2 * a := by   
-      calc 
-        2 * 2 = - 1 + 3 + 2 := by ring
-        _ ≤  (2 * a - 5) + 3 + 2 := by rel[h_1l]
-        _ = 2 * a := by ring
-    cancel 2 at h_2a
-    have h_2a': 2 * a ≤ 2 * 3 := by   
-      calc 
-        2 * a = (2 * a + - 5) + 5 := by ring
-        _ ≤ 1 + 5 := by addarith[h_1r]
-        _ = 2 * 3 := by numbers
-    cancel 2 at h_2a'
+    have h1 := calc 
+      (2*a-5)^2 = 4*(a ^ 2 - 5 * a + 5) + 5 := by ring
+      _ ≤ 4 * -1 + 5 := by rel[h]
+      _ = 1^2 := by ring
+    have h2 : (0:ℤ) ≤1 := by numbers
+    obtain ⟨h3, h4⟩ := abs_le_of_sq_le_sq' h1 h2
+    have h3 : 2*2 ≤ 2*a := by addarith[h3]
+    cancel 2 at h3
+    have h4 : 2*a ≤ 2*3 := by addarith[h4]
+    cancel 2 at h4
     interval_cases a
-    · left
-      numbers -- show `a = 2`
-    · right
-      numbers -- show `a = 3`
-  . intro h 
-    obtain ha | ha := h
-    .calc 
-      a ^ 2 - 5 * a + 5 ≤ 2 ^ 2 - 5 * 2 + 5 := by rw[ha]
-      _ ≤ -1 := by numbers 
-    .calc 
-      a ^ 2 - 5 * a + 5 ≤ 3 ^ 2 - 5 * 3 + 5 := by rw[ha]
-      _ ≤ -1 := by numbers 
+    · left; numbers
+    · right; numbers
+  . intro h
+    obtain ha2 | ha3 := h
+    . rw [ha2]
+      numbers
+    . rw [ha3]
+      numbers
